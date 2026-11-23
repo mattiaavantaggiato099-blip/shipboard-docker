@@ -1,5 +1,9 @@
+
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using ShipBoard.Api;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +22,27 @@ builder.Services.AddDbContext<ShipBoardDb>(options =>
 builder.Services.AddHealthChecks().AddDbContextCheck<ShipBoardDb>();
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// OpenTelemetry: log, tracce e metriche.
+builder.Logging.AddOpenTelemetry(o =>
+{
+    o.IncludeFormattedMessage = true;
+    o.IncludeScopes = true;
+});
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(t => t
+        .AddSource("ShipBoard.Api")
+        .AddSource("Npgsql")
+        .AddAspNetCoreInstrumentation(o =>
+            o.Filter = ctx => ctx.Request.Path != "/health")
+        .AddHttpClientInstrumentation())
+    .WithMetrics(m => m
+        .AddMeter("ShipBoard.Api")
+        .AddAspNetCoreInstrumentation());
+
+if (!string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+    builder.Services.AddOpenTelemetry().UseOtlpExporter();
 
 var app = builder.Build();
 

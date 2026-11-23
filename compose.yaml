@@ -1,3 +1,4 @@
+
 services:
   db:
     image: postgres:17-alpine
@@ -13,11 +14,20 @@ services:
       timeout: 5s
       retries: 5
 
+  dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.6.5
+    environment:
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "18888:18888"
+
   api:
     build:
       context: ./src/ShipBoard.Api
     environment:
       ConnectionStrings__shipboard: Host=db;Port=5432;Database=shipboard;Username=shipboard;Password=shipboard
+      OTEL_SERVICE_NAME: shipboard-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://dashboard:18889
     depends_on:
       db:
         condition: service_healthy

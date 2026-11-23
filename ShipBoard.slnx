@@ -5,4 +5,5 @@
   <Folder Name="/tests/">
     <Project Path="tests/ShipBoard.Api.Tests/ShipBoard.Api.Tests.csproj" />
   </Folder>
+  <Project Path="ShipBoard.AppHost/ShipBoard.AppHost.csproj" />
 </Solution>
